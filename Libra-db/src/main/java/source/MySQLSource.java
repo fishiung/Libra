@@ -23,6 +23,12 @@ public class MySQLSource implements Source {
     private List<String> tables = new ArrayList<>();
     private Map<String, List<String>> tablesDesc = new HashMap<>();
 
+    public MySQLSource(String url, String username, String password){
+        this.url = url;
+        this.username = username;
+        this.password = password;
+    }
+
     private void init(String url, String username, String password) {
         Connection conn = null;
         PreparedStatement ps = null;
@@ -50,7 +56,7 @@ public class MySQLSource implements Source {
                 resultSet = ps.executeQuery();
                 List<String> tmp = new ArrayList<>();
                 while (resultSet.next()) {
-                    tmp.add(resultSet.getString(1) + "\t" + resultSet.getString(2));
+                    tmp.add(resultSet.getString(1).toLowerCase() + "\t" + resultSet.getString(2).toLowerCase());
                 }
                 tablesDesc.put(tableName,tmp);
             }
@@ -66,8 +72,13 @@ public class MySQLSource implements Source {
             }
 
         }
+        INITIALIZED = true;
     }
 
+    public String[] getTables(){
+        if (!INITIALIZED) init(url, username, password);
+        return tables.toArray(new String[]{});
+    }
 
     @Override
     public String[] getFields(String tableName) {
@@ -75,6 +86,15 @@ public class MySQLSource implements Source {
         List<String> tmp = tablesDesc.get(tableName);
         if(tmp == null || tmp.isEmpty()) return null;
         return (String[])tmp.stream().map(s->s.split("\t")[0]).toArray();
+    }
+
+    public List[String[]] getTableDesc(String tableName){
+        if (!INITIALIZED) init(url, username, password);
+        List<String> tmp = tablesDesc.get(tableName);
+        if(tmp == null || tmp.isEmpty()) return null;
+        String [] fields = (String[]) tmp.stream().map(s->s.split("\t")[0]).toArray();
+        String [] types = (String[]) tmp.stream().map(s->s.split("\t")[1]).toArray();
+        return ;
     }
 
     @Override
@@ -89,6 +109,15 @@ public class MySQLSource implements Source {
     public String type() {
         return "MySQL";
     }
+
+    public String getDatabaseName() {
+        return databaseName;
+    }
+
+    public void setDatabaseName(String databaseName) {
+        this.databaseName = databaseName;
+    }
+
 
 
 //    public static void main(String[] args) throws SQLException {
