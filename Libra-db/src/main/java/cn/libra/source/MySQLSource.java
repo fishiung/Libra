@@ -1,15 +1,16 @@
-package source;
+package cn.libra.source;
 
-import conn.JDBCConn;
+import cn.libra.conn.JDBCConn;
+import cn.libra.model.TableDescBean;
+import cn.libra.util.TransformType;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by fishiung on 2017-11-24
@@ -23,7 +24,7 @@ public class MySQLSource implements Source {
     private List<String> tables = new ArrayList<>();
     private Map<String, List<String>> tablesDesc = new HashMap<>();
 
-    public MySQLSource(String url, String username, String password){
+    public MySQLSource(String url, String username, String password) {
         this.url = url;
         this.username = username;
         this.password = password;
@@ -58,7 +59,7 @@ public class MySQLSource implements Source {
                 while (resultSet.next()) {
                     tmp.add(resultSet.getString(1).toLowerCase() + "\t" + resultSet.getString(2).toLowerCase());
                 }
-                tablesDesc.put(tableName,tmp);
+                tablesDesc.put(tableName, tmp);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -75,7 +76,7 @@ public class MySQLSource implements Source {
         INITIALIZED = true;
     }
 
-    public String[] getTables(){
+    public String[] getTables() {
         if (!INITIALIZED) init(url, username, password);
         return tables.toArray(new String[]{});
     }
@@ -84,25 +85,25 @@ public class MySQLSource implements Source {
     public String[] getFields(String tableName) {
         if (!INITIALIZED) init(url, username, password);
         List<String> tmp = tablesDesc.get(tableName);
-        if(tmp == null || tmp.isEmpty()) return null;
-        return (String[])tmp.stream().map(s->s.split("\t")[0]).toArray();
+        if (tmp == null || tmp.isEmpty()) return null;
+        return (String[]) tmp.stream().map(s -> s.split("\t")[0]).toArray();
     }
 
-    public List[String[]] getTableDesc(String tableName){
+    public TableDescBean getTableDesc(String tableName) {
         if (!INITIALIZED) init(url, username, password);
         List<String> tmp = tablesDesc.get(tableName);
-        if(tmp == null || tmp.isEmpty()) return null;
-        String [] fields = (String[]) tmp.stream().map(s->s.split("\t")[0]).toArray();
-        String [] types = (String[]) tmp.stream().map(s->s.split("\t")[1]).toArray();
-        return ;
+        if (tmp == null || tmp.isEmpty()) return null;
+        String[] fields = (String[]) tmp.stream().map(s -> s.split("\t")[0]).collect(Collectors.toList()).toArray(new String[]{});
+        String[] types = (String[]) tmp.stream().map(s -> s.split("\t")[1]).map(TransformType::MYSQL2ES).collect(Collectors.toList()).toArray(new String[]{});
+        return new TableDescBean(tableName, fields, types);
     }
 
     @Override
     public String[] getType(String tableName) {
         if (!INITIALIZED) init(url, username, password);
         List<String> tmp = tablesDesc.get(tableName);
-        if(tmp == null || tmp.isEmpty()) return null;
-        return (String[])tmp.stream().map(s->s.split("\t")[1]).toArray();
+        if (tmp == null || tmp.isEmpty()) return null;
+        return (String[]) tmp.stream().map(s -> s.split("\t")[1]).toArray();
     }
 
     @Override
@@ -119,12 +120,44 @@ public class MySQLSource implements Source {
     }
 
 
+    public static void main(String[] args) throws SQLException {
+        MySQLSource source=new MySQLSource("jdbc:mysql://localhost:3306/hippo?useSSL=false", "root", "root");
 
-//    public static void main(String[] args) throws SQLException {
-//        MySQLSource source = new MySQLSource();
-//        source.init("jdbc:mysql://localhost:3306/hippo", "root", "root");
-//
-//        source.tables.forEach(e -> System.out.println(e));
-//        source.tablesDesc.forEach((a, b) -> System.out.println(a + ":" + b));
-//    }
+        String[] all = source.getAll();
+        for (String s : all) {
+            System.out.println(s);
+        }
+
+
+    }
+
+
+    public  String[] getAll() throws SQLException{
+        ResultSet resultSet = null;
+        Connection conn = JDBCConn.conn().MYSQL(url, username, password);
+        String sql = "select * from data_import_record";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        resultSet = ps.executeQuery();
+        //{ "price" : 1000, "color" : "红色", "brand" : "长虹", "sold_date" : "2016-10-28" }
+        String fields[] = getTableDesc("data_import_record").getFields();
+        StringBuilder sb = new StringBuilder();
+        int count=53;
+        String res[] = new String[count];
+        int num =0;
+        while (resultSet.next()) {
+            for(int i=1;i<fields.length;i++){
+                Object value = resultSet.getObject(i);
+                try{
+                    Timestamp a = (Timestamp)value;
+                    value = a.getTime();
+                }catch (Exception e){
+                }
+                sb.append("\""+fields[i-1]+"\":" +"\""+value+"\",");
+            }
+            res[num++] = "{"+sb.toString().substring(0,sb.length()-1)+"}";
+            sb.delete(0,sb.length());
+        }
+        return res;
+    }
+
 }

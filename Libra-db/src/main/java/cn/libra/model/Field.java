@@ -1,4 +1,4 @@
-package model;
+package cn.libra.model;
 
 /**
  * Created by fishiung on 2017-11-24
@@ -24,9 +24,7 @@ public class Field {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+    public void setType(String type) { this.type = type; }
 
     public boolean isStore() {
         return store;

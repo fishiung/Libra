@@ -1,6 +1,5 @@
-package conn;
+package cn.libra.conn;
 
-import ch.qos.logback.classic.db.SQLBuilder;
 import org.apache.log4j.Logger;
 
 import java.sql.Connection;

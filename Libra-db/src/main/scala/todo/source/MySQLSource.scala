@@ -1,10 +1,10 @@
-package source
+package todo.source
 
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 
-import collection.mutable._
-import conn.JDBCConn
+import cn.libra.conn.JDBCConn
 
+import collection.mutable._
 import scala.collection.mutable
 
 /**
@@ -69,6 +69,7 @@ class MySQLSource(val url: String, val username: String, val password: String) {
   def getTableInfo(tableName:String):(Array[String],Array[String])={
     if(!initialized) init(url,username,password)
     val tmp = tablesDesc.get(tableName)
-    if(tmp != null && !tmp.isEmpty) (tmp.iterator.map(x=>))
+    if(tmp != null && !tmp.isEmpty) tmp.foreach(println(_))
+    (Array("AS"),Array("sda"))
   }
 }

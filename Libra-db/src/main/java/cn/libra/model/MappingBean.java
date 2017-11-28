@@ -1,6 +1,6 @@
-package model;
+package cn.libra.model;
 
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class MappingBean {
 
-    private Map<String,Field> properties;
+    private Map<String,Field> properties = new LinkedHashMap<>();
 
     public Map<String, Field> getProperties() {
         return properties;
